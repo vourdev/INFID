@@ -127,7 +127,7 @@ const ContactUs = () => {
                         </div>
                         <div>
                             <h3 className='text-base font-semibold text-gray-800'>{t('info.email')}</h3>
-                            <p className='text-primary-900 text-sm'>info@infid.org</p>
+                            <p className='text-primary-900 text-sm'>office@infid.org</p>
                             <p className='text-primary-900 text-sm'>pengaduan@infid.org</p>
                         </div>
                     </div>
@@ -139,8 +139,8 @@ const ContactUs = () => {
                         </div>
                         <div>
                             <h3 className='text-base font-semibold text-gray-800'>{t('info.contact')}</h3>
-                            <p className='text-primary-900 text-sm'>{t('info.phone')} : +62 21 781 9734</p>
-                            <p className='text-primary-900 text-sm'>Whatsapp : +628119277507</p>
+                            <p className='text-primary-900 text-sm'>{t('info.phone')} : +62 21 781 9735</p>
+                            <p className='text-primary-900 text-sm'>Whatsapp : +62217819735</p>
                         </div>
                     </div>
 

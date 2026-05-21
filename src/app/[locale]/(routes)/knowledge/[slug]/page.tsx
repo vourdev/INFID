@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { apiRequest } from '@/lib/api-request';
@@ -17,6 +18,14 @@ async function getPostDetail(id: string) {
     }
 }
 
+function extractIdFromSlug(slug: string): string | null {
+    const id = slug.split('-')[0];
+    if (!id || !/^\d+$/.test(id)) {
+        return null;
+    }
+    return id;
+}
+
 export async function generateMetadata({
     params
 }: {
@@ -25,17 +34,22 @@ export async function generateMetadata({
     const resolvedParams = await params;
     const { locale, slug } = resolvedParams;
 
-    const id = slug.split('-')[0];
+    const id = extractIdFromSlug(slug);
+    if (!id) {
+        return { title: 'Knowledge Not Found' };
+    }
 
     const data = await getPostDetail(id);
-    if (!data) return { title: 'News Not Found' };
+    if (!data) {
+        return { title: 'Knowledge Not Found' };
+    }
 
     const translation =
         data?.translations?.find((t) => t.language === locale) ||
         data?.translations?.find((t) => t.language === 'id') ||
         data?.translations?.[0];
 
-    const title = translation?.title || 'Detail Berita';
+    const title = translation?.title || 'Detail Knowledge';
     const description = getShortDescription(translation?.content);
 
     return {
@@ -44,13 +58,13 @@ export async function generateMetadata({
         openGraph: {
             title: title,
             description: description,
-            images: [data?.cover],
+            images: data?.cover ? [data.cover] : [],
             type: 'article'
         },
         twitter: {
             card: 'summary_large_image',
             title: title,
-            images: [data?.cover]
+            images: data?.cover ? [data.cover] : []
         }
     };
 }
@@ -58,8 +72,22 @@ export async function generateMetadata({
 export default async function Page({ params }: { params: Promise<{ locale: string; slug: string }> }) {
     const resolvedParams = await params;
     const { locale, slug } = resolvedParams;
-    const id = slug.split('-')[0];
+
+    const id = extractIdFromSlug(slug);
+    if (!id) {
+        notFound();
+    }
+
     const data = await getPostDetail(id);
+
+    if (!data) {
+        notFound();
+    }
+
+    // Optional: cek status published
+    if (data.status?.toLowerCase() !== 'published') {
+        notFound();
+    }
 
     return <DetailKnowledgeClient initialData={data} locale={locale} postId={id} />;
 }

@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { apiRequest } from '@/lib/api-request';
@@ -10,11 +11,19 @@ import DetailNewsClient from './detail-news-client';
 async function getPostDetail(id: string) {
     try {
         const res = await apiRequest.get<Post>(`${API_ENDPOINTS.posts}/${id}`);
-        return res.data || [];
+        return res.data || null;
     } catch (error) {
         console.error('Fetch Detail Error:', error);
         return null;
     }
+}
+
+function extractIdFromSlug(slug: string): string | null {
+    const id = slug.split('-')[0];
+    if (!id || !/^\d+$/.test(id)) {
+        return null;
+    }
+    return id;
 }
 
 export async function generateMetadata({
@@ -25,10 +34,15 @@ export async function generateMetadata({
     const resolvedParams = await params;
     const { locale, slug } = resolvedParams;
 
-    const id = slug.split('-')[0];
+    const id = extractIdFromSlug(slug);
+    if (!id) {
+        return { title: 'News Not Found' };
+    }
 
     const data = await getPostDetail(id);
-    if (!data) return { title: 'News Not Found' };
+    if (!data) {
+        return { title: 'News Not Found' };
+    }
 
     const translation =
         data?.translations?.find((t) => t.language === locale) ||
@@ -44,13 +58,13 @@ export async function generateMetadata({
         openGraph: {
             title: title,
             description: description,
-            images: [data?.cover],
+            images: data?.cover ? [data.cover] : [],
             type: 'article'
         },
         twitter: {
             card: 'summary_large_image',
             title: title,
-            images: [data?.cover]
+            images: data?.cover ? [data.cover] : []
         }
     };
 }
@@ -58,7 +72,21 @@ export async function generateMetadata({
 export default async function Page({ params }: { params: Promise<{ locale: string; slug: string }> }) {
     const resolvedParams = await params;
     const { locale, slug } = resolvedParams;
-    const id = slug.split('-')[0];
+
+    const id = extractIdFromSlug(slug);
+    if (!id) {
+        notFound();
+    }
+
     const data = await getPostDetail(id);
+
+    if (!data) {
+        notFound();
+    }
+
+    if (data.status?.toLowerCase() !== 'published') {
+        notFound();
+    }
+
     return <DetailNewsClient initialData={data} locale={locale} postId={id} />;
 }
