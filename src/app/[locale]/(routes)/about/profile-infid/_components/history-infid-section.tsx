@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useRouter } from '@/i18n/navigation';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { apiRequest } from '@/lib/api-request';
-import { formatArticleDate } from '@/lib/utils';
+import { formatArticleDate, getLangText } from '@/lib/utils';
 import { LTPeople, LeadershipTimeline, Publication } from '@/types/leadership-timeline';
 import { Post } from '@/types/posts';
 
@@ -101,7 +101,7 @@ const InfidTimeline = ({ initialData }: { initialData: LeadershipTimeline[] }) =
                                         </div>
                                         <p
                                             className={`mt-4 text-center text-sm leading-snug ${isActive ? 'text-primary-500 font-semibold' : 'text-slate-900'}`}>
-                                            {item.title}
+                                            {getLangText(item.title, locale) || ''}
                                         </p>
                                     </div>
                                 );
@@ -113,7 +113,11 @@ const InfidTimeline = ({ initialData }: { initialData: LeadershipTimeline[] }) =
                 {/* Content Area */}
                 <div className='mt-8'>
                     <div className='max-w-full xl:max-w-4xl'>
-                        <h2 className='text-primary-500 mb-6 text-2xl font-bold'>{selectedTimeline.title}</h2>
+                        <h2 className='text-primary-500 mb-6 text-2xl font-bold'>
+                            {selectedTimeline.title?.find((d) => d.language === locale)?.text ||
+                                selectedTimeline.title?.[0]?.text ||
+                                ''}
+                        </h2>
                         <div className='flex flex-col items-start gap-8 md:flex-row'>
                             <div className='flex w-full flex-col gap-2 md:w-1/3'>
                                 {selectedTimeline.images.map((item, index) => (
@@ -140,7 +144,7 @@ const InfidTimeline = ({ initialData }: { initialData: LeadershipTimeline[] }) =
                     </div>
                     {selectedTimeline.people && selectedTimeline.people.length > 0 && (
                         <PeopleGrid
-                            title={selectedTimeline.title}
+                            title={getLangText(selectedTimeline.title, locale) || ''}
                             data={selectedTimeline.people}
                             onItemClick={handlePersonClick}
                             hideTitle={selectedTimeline.people.length < 0}
@@ -156,7 +160,7 @@ const InfidTimeline = ({ initialData }: { initialData: LeadershipTimeline[] }) =
                             <>
                                 <DialogHeader>
                                     <DialogTitle className='text-start font-bold text-gray-900'>
-                                        Profil {selectedTimeline.title}
+                                        Profil {getLangText(selectedTimeline.title, locale) || ''}
                                     </DialogTitle>
                                     <DialogDescription></DialogDescription>
                                 </DialogHeader>
@@ -204,7 +208,7 @@ const InfidTimeline = ({ initialData }: { initialData: LeadershipTimeline[] }) =
                                                 <div className='h-20 w-20 shrink-0 overflow-hidden rounded-md bg-slate-100'>
                                                     <img
                                                         src={pub?.cover ?? ''}
-                                                        alt={translation.title}
+                                                        alt={getLangText(selectedTimeline.title, locale) || ''}
                                                         onError={(e) => {
                                                             (e.target as HTMLImageElement).src =
                                                                 '/images/placeholder-square.png';

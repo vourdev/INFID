@@ -21,7 +21,6 @@ async function getLeadershipTimeline() {
 
 const ProfileInfid = async () => {
     const timelineData = await getLeadershipTimeline();
-
     return (
         <>
             <AboutInfid />

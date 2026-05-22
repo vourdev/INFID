@@ -1,5 +1,6 @@
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { apiRequest } from '@/lib/api-request';
+import { Partners } from '@/types/patner';
 import { Post } from '@/types/posts';
 
 import AboutUsSection from './_components/about-us-section';
@@ -30,12 +31,28 @@ async function getInitialPublications() {
     }
 }
 
+async function getPatner() {
+    try {
+        const res = await apiRequest.get<Partners[]>(API_ENDPOINTS.partners, {
+            params: {
+                is_donor: true
+            }
+        });
+        return res.data || [];
+    } catch (error) {
+        console.error('Fetch Patner Error:', error);
+        return null;
+    }
+}
+
 const HomePage = async () => {
     const programData = await getInitialPublications();
+    const partnerData = await getPatner();
+
     return (
         <>
             <Home />
-            <LogoSection />
+            <LogoSection initialData={partnerData} />
             <AboutUsSection />
             <RealImpactSection programData={programData} />
             <PublicationsSection />

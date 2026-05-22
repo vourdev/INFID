@@ -170,7 +170,7 @@ const DetailKnowledgeClient = ({ initialData, locale, postId }: Props) => {
                         <div className='flex items-center justify-between gap-4'>
                             <h3 className='text-secondary-300 font-bold uppercase'>
                                 {getLangText(initialData?.category.name, locale) === 'Cerita Perubahan' ||
-                                getLangText(initialData?.category.name, locale) === 'Stories of change'
+                                getLangText(initialData?.category.name, locale) === 'Stories of Change'
                                     ? 'Bergerak, Berdampak!'
                                     : getLangText(initialData?.category.name, locale)}
                             </h3>
@@ -228,7 +228,7 @@ const DetailKnowledgeClient = ({ initialData, locale, postId }: Props) => {
                         <ArticleShareBar
                             categoryName={
                                 getLangText(initialData?.category.name, locale) === 'Cerita Perubahan' ||
-                                getLangText(initialData?.category.name, locale) === 'Stories of change'
+                                getLangText(initialData?.category.name, locale) === 'Stories of Change'
                                     ? 'Bergerak, Berdampak!'
                                     : getLangText(initialData?.category.name, locale)
                             }

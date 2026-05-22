@@ -2,9 +2,15 @@
 
 import Image from 'next/image';
 
+import { Partners } from '@/types/patner';
+
 import Marquee from 'react-fast-marquee';
 
-const LogoSection = () => {
+interface Props {
+    initialData: Partners[] | null;
+}
+
+const LogoSection = ({ initialData }: Props) => {
     const logos = [
         { name: 'Partner 1', icon: '/images/patner-1.png' },
         { name: 'Ford Foundation', icon: '/images/patner-2.png' },
