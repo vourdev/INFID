@@ -140,7 +140,7 @@ const ContactUs = () => {
                         <div>
                             <h3 className='text-base font-semibold text-gray-800'>{t('info.contact')}</h3>
                             <p className='text-primary-900 text-sm'>{t('info.phone')} : +62 21 781 9735</p>
-                            <p className='text-primary-900 text-sm'>Whatsapp : +62217819735</p>
+                            <p className='text-primary-900 text-sm'>Whatsapp : +6281 1927 7507</p>
                         </div>
                     </div>
 
