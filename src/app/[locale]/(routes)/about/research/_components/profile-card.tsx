@@ -22,6 +22,7 @@ export default function ProfileCard({ name, title, image, onItemClick }: Profile
                     alt=''
                     aria-hidden='true'
                     fill
+                    sizes='(max-width: 768px) 100vw, 256px'
                     placeholderType='square'
                     className='rounded-lg'
                 />

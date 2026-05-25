@@ -8,7 +8,7 @@ async function getInitialResearchFellow() {
     try {
         const res = await apiRequest.get<Research[]>(API_ENDPOINTS.researchFellow, {
             params: {
-                limit: ''
+                limit: 20
             }
         });
         return res.data;

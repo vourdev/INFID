@@ -162,7 +162,7 @@ function MemberCard({
             onClick={onClick}
             className='group cursor-pointer rounded-lg border border-slate-200 bg-white p-3 transition-shadow duration-300 ease-in-out hover:shadow'>
             <div className='relative mb-4 aspect-square h-50 w-full overflow-hidden rounded-lg'>
-                <OptimizedImage src={image} alt={name} fill placeholderType='square' />
+                <OptimizedImage src={image} alt={name} fill placeholderType='square' className='object-cover' />
             </div>
             <h3 className='text-center font-bold text-slate-900'>{name}</h3>
             <p className='text-primary-500 mb-2 max-w-75 text-center text-sm font-medium'>{role}</p>

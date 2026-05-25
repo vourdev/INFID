@@ -6,19 +6,24 @@ import CardContent from '@/components/common/card-content';
 import EmptyState from '@/components/common/empty-state';
 import OptimizedImage from '@/components/common/optimized-image';
 import { SectionHeader } from '@/components/common/section-header';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { API_ENDPOINTS } from '@/lib/api-endpoints';
 import { apiRequest } from '@/lib/api-request';
 import { Research, ResearchPerson } from '@/types/research';
 
 import ProfileCard from './profile-card';
-import { Linkedin, Mail } from 'lucide-react';
+import { Linkedin, Loader2, Mail } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => {
     const t = useTranslations('research-fellow.fellow_section');
     const [dialogOpen, setDialogOpen] = useState<boolean>(false);
     const [selectedPerson, setSelectedPerson] = useState<ResearchPerson | null>(null);
+    const [items, setItems] = useState<Research[]>(initialData);
+    const [page, setPage] = useState<number>(1);
+    const [hasMore, setHasMore] = useState<boolean>(initialData.length >= 10);
+    const [loading, setLoading] = useState<boolean>(false);
     const locale = useLocale();
 
     const handlePersonClick = async (person: Research): Promise<void> => {
@@ -30,6 +35,26 @@ const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => 
         }
 
         setDialogOpen(true);
+    };
+
+    const loadMore = async () => {
+        setLoading(true);
+        const newPage = page + 1;
+        try {
+            const res = await apiRequest.get<Research[]>(API_ENDPOINTS.researchFellow, {
+                params: { limit: 20, page: String(newPage) }
+            });
+            if (res.data && res.data.length > 0) {
+                setItems((prev) => [...prev, ...res.data!]);
+                setPage(newPage);
+            } else {
+                setHasMore(false);
+            }
+        } catch {
+            setHasMore(false);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -57,11 +82,11 @@ const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => 
                     className='mb-0'
                 />
 
-                {initialData.length > 0 ? (
+                {items.length > 0 ? (
                     <div className='grid grid-cols-1 gap-4 py-24 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'>
-                        {initialData.map((profile, index) => (
+                        {items.map((profile, index) => (
                             <ProfileCard
-                                key={profile.id || index}
+                                key={index}
                                 name={profile.name}
                                 title={profile.occupation}
                                 image={profile.image ?? ''}
@@ -71,6 +96,15 @@ const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => 
                     </div>
                 ) : (
                     <EmptyState />
+                )}
+
+                {hasMore && (
+                    <div className='flex justify-center'>
+                        <Button onClick={loadMore} disabled={loading} variant='outline' className='rounded-full px-8'>
+                            {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                            {loading ? 'Loading...' : 'Load More'}
+                        </Button>
+                    </div>
                 )}
 
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
