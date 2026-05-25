@@ -13,7 +13,7 @@ import { apiRequest } from '@/lib/api-request';
 import { Research, ResearchPerson } from '@/types/research';
 
 import ProfileCard from './profile-card';
-import { Linkedin, Loader2, Mail } from 'lucide-react';
+import { Linkedin, Mail } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 
 const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => {
@@ -22,8 +22,9 @@ const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => 
     const [selectedPerson, setSelectedPerson] = useState<ResearchPerson | null>(null);
     const [items, setItems] = useState<Research[]>(initialData);
     const [page, setPage] = useState<number>(1);
-    const [hasMore, setHasMore] = useState<boolean>(initialData.length >= 10);
+    const [hasMore, setHasMore] = useState<boolean>(initialData.length >= 20);
     const [loading, setLoading] = useState<boolean>(false);
+    const [hasClickedLoadMore, setHasClickedLoadMore] = useState<boolean>(false);
     const locale = useLocale();
 
     const handlePersonClick = async (person: Research): Promise<void> => {
@@ -38,6 +39,7 @@ const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => 
     };
 
     const loadMore = async () => {
+        setHasClickedLoadMore(true);
         setLoading(true);
         const newPage = page + 1;
         try {
@@ -98,12 +100,15 @@ const ResearchFellowSection = ({ initialData }: { initialData: Research[] }) => 
                     <EmptyState />
                 )}
 
-                {hasMore && (
+                {hasMore ? (
                     <div className='flex justify-center'>
                         <Button onClick={loadMore} disabled={loading} variant='outline' className='rounded-full px-8'>
-                            {loading && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-                            {loading ? 'Loading...' : 'Load More'}
+                            {t('load_more')}
                         </Button>
+                    </div>
+                ) : hasClickedLoadMore && items.length > 0 && (
+                    <div className='flex justify-center'>
+                        <p className='text-sm text-muted-foreground'>{t('showAllData')}</p>
                     </div>
                 )}
 

@@ -65,12 +65,7 @@ const PdfPreviewer = ({ href, label }: { href: string; label: string }) => {
                 </a>
             </div>
 
-            {/* <iframe src={`${href}#toolbar=0`} className='h-125 w-full border-none' title={label} onLoad={(e) => {}} /> */}
-            <iframe
-                src={`https://docs.google.com/gview?url=${href}&embedded=true`}
-                style={{ width: '100%', height: '500px' }}
-                frameBorder='0'
-            />
+            <iframe src={`${href}#toolbar=0`} className='h-125 w-full border-none' title={label} onLoad={(e) => {}} />
         </section>
     );
 };

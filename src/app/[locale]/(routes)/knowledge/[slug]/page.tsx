@@ -84,7 +84,6 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
         notFound();
     }
 
-    // Optional: cek status published
     if (data.status?.toLowerCase() !== 'published') {
         notFound();
     }
