@@ -5,7 +5,7 @@ import { apiRequest } from '@/lib/api-request';
 import { allowedKnowledgeCategories, allowedNewsCategories } from '@/types/categories';
 import { Post } from '@/types/posts';
 
-const BASE_URL = process.env.NEXT_PUBLIC_URL;
+const BASE_URL = process.env.NEXT_URL;
 const LOCALES = ['id', 'en'] as const;
 
 export const revalidate = 3600;
@@ -32,12 +32,10 @@ const STATIC_ROUTES: Array<{
 ];
 
 const isKnowledgeCategory = (categoryName?: string) =>
-    !!categoryName &&
-    allowedKnowledgeCategories.some((c) => c.id === categoryName || c.en === categoryName);
+    !!categoryName && allowedKnowledgeCategories.some((c) => c.id === categoryName || c.en === categoryName);
 
 const isNewsCategory = (categoryName?: string) =>
-    !!categoryName &&
-    allowedNewsCategories.some((c) => c.id === categoryName || c.en === categoryName);
+    !!categoryName && allowedNewsCategories.some((c) => c.id === categoryName || c.en === categoryName);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const now = new Date();
@@ -58,9 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             params: { limit: 1000, page: 1 }
         });
 
-        const articles = (res.data || []).filter(
-            (post) => post.status?.toLowerCase() === 'published'
-        );
+        const articles = (res.data || []).filter((post) => post.status?.toLowerCase() === 'published');
 
         articlePages = articles.flatMap((post) => {
             const slug = post.translations?.[0]?.slug;
