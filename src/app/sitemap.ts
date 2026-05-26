@@ -59,27 +59,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         const articles = (res.data || []).filter((post) => post.status?.toLowerCase() === 'published');
 
         articlePages = articles.flatMap((post) => {
-            const slug = post.translations?.[0]?.slug;
-            if (!slug) return [];
-
-            const categoryName = post.category?.name?.[0]?.text;
             const lastModified = post.updated_at ? new Date(post.updated_at) : now;
+            const categoryTranslations = post.category?.name ?? [];
+            const matchedKnowledge = categoryTranslations.some((t) => isKnowledgeCategory(t.text));
+            const matchedNews = categoryTranslations.some((t) => isNewsCategory(t.text));
 
-            let basePath: string | null = null;
-            if (isKnowledgeCategory(categoryName)) {
-                basePath = `knowledge/${post.id}-${slug}`;
-            } else if (isNewsCategory(categoryName)) {
-                basePath = `news-from-us/${post.id}-${slug}`;
-            }
+            const segments: string[] = [];
+            if (matchedKnowledge) segments.push('knowledge');
+            if (matchedNews) segments.push('news-from-us');
+            if (segments.length === 0) segments.push('news-from-us');
 
-            if (!basePath) return [];
+            return LOCALES.flatMap((locale) => {
+                const translation =
+                    post.translations?.find((t) => t.language === locale) ?? post.translations?.[0];
+                const slug = translation?.slug;
+                if (!slug) return [];
 
-            return LOCALES.map((locale) => ({
-                url: `${BASE_URL}/${locale}/${basePath}`,
-                lastModified,
-                changeFrequency: 'weekly' as const,
-                priority: 0.7
-            }));
+                return segments.map((segment) => ({
+                    url: `${BASE_URL}/${locale}/${segment}/${post.id}-${slug}`,
+                    lastModified,
+                    changeFrequency: 'weekly' as const,
+                    priority: 0.7
+                }));
+            });
         });
     } catch (error) {
         console.error('Failed to generate sitemap for articles:', error);

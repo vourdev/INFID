@@ -10,10 +10,11 @@ export default function robots(): MetadataRoute.Robots {
                 allow: '/',
                 disallow: ['/api/', '/_next/', '/*?*', '/id/404', '/en/404']
             },
-            {
-                userAgent: ['GPTBot', 'CCBot', 'anthropic-ai', 'ClaudeBot', 'Google-Extended'],
-                disallow: '/'
-            }
+            { userAgent: 'GPTBot', disallow: '/' },
+            { userAgent: 'CCBot', disallow: '/' },
+            { userAgent: 'anthropic-ai', disallow: '/' },
+            { userAgent: 'ClaudeBot', disallow: '/' },
+            { userAgent: 'Google-Extended', disallow: '/' }
         ],
         sitemap: `${BASE_URL}/sitemap.xml`,
         host: BASE_URL
