@@ -1,11 +1,12 @@
 import { MetadataRoute } from 'next';
 
 import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-endpoints';
-import { allowedKnowledgeCategories, allowedNewsCategories } from '@/types/categories';
 import { Post } from '@/types/posts';
 
 const BASE_URL = (process.env.NEXT_URL ?? '').replace(/\/+$/, '');
 const LOCALES = ['id', 'en'] as const;
+const NEWS_CATEGORIES = 'Kegiatan|Siaran Pers|Laporan Tahunan';
+const NEWS_LIMIT = 100;
 
 export const revalidate = 3600;
 
@@ -30,11 +31,43 @@ const STATIC_ROUTES: Array<{
     { path: '/contact-us', changeFrequency: 'yearly', priority: 0.5 }
 ];
 
-const isKnowledgeCategory = (categoryName?: string) =>
-    !!categoryName && allowedKnowledgeCategories.some((c) => c.id === categoryName || c.en === categoryName);
+async function fetchLatestNewsPosts(): Promise<Post[]> {
+    if (!API_BASE_URL) {
+        console.error('[sitemap] NEXT_PUBLIC_API_URL is not defined — skipping article URLs');
+        return [];
+    }
 
-const isNewsCategory = (categoryName?: string) =>
-    !!categoryName && allowedNewsCategories.some((c) => c.id === categoryName || c.en === categoryName);
+    const params = new URLSearchParams({
+        category: NEWS_CATEGORIES,
+        limit: String(NEWS_LIMIT),
+        page: '1',
+        year: '',
+        author: '',
+        tags: '',
+        search: ''
+    });
+    const endpoint = `${API_BASE_URL.replace(/\/+$/, '')}${API_ENDPOINTS.posts}?${params.toString()}`;
+
+    try {
+        const response = await fetch(endpoint, {
+            headers: { Accept: 'application/json' },
+            next: { revalidate: 3600 }
+        });
+
+        if (!response.ok) {
+            console.error(`[sitemap] Posts API ${response.status} ${response.statusText}`);
+            return [];
+        }
+
+        const payload = (await response.json()) as { data?: Post[] };
+        const posts = Array.isArray(payload?.data) ? payload.data : [];
+        console.log(`[sitemap] Fetched ${posts.length} news posts`);
+        return posts;
+    } catch (error) {
+        console.error('[sitemap] Failed to fetch news posts:', error);
+        return [];
+    }
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const now = new Date();
@@ -48,56 +81,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
     );
 
-    let articlePages: MetadataRoute.Sitemap = [];
+    const posts = await fetchLatestNewsPosts();
 
-    if (!API_BASE_URL) {
-        console.error('[sitemap] NEXT_PUBLIC_API_URL is not defined — skipping article URLs');
-        return [...staticPages, ...articlePages];
-    }
-
-    try {
-        const endpoint = `${API_BASE_URL.replace(/\/+$/, '')}${API_ENDPOINTS.posts}?limit=1000&page=1`;
-        const response = await fetch(endpoint, {
-            headers: { 'Content-Type': 'application/json' },
-            next: { revalidate: 3600 }
-        });
-
-        if (!response.ok) {
-            console.error(
-                `[sitemap] Posts API responded with ${response.status} ${response.statusText} for ${endpoint}`
-            );
-            return [...staticPages, ...articlePages];
-        }
-
-        const payload = (await response.json()) as {
-            data?: Post[] | { data?: Post[] };
-        } & { [key: string]: unknown };
-
-        const rawData = payload?.data;
-        const articlesRaw: Post[] = Array.isArray(rawData)
-            ? rawData
-            : Array.isArray((rawData as { data?: Post[] })?.data)
-              ? ((rawData as { data?: Post[] }).data ?? [])
-              : Array.isArray(payload as unknown as Post[])
-                ? (payload as unknown as Post[])
-                : [];
-
-        console.log(`[sitemap] Fetched ${articlesRaw.length} posts from API`);
-
-        const articles = articlesRaw.filter(
-            (post) => post.status?.toLowerCase() === 'published'
-        );
-
-        articlePages = articles.flatMap((post) => {
+    const articlePages: MetadataRoute.Sitemap = posts
+        .filter((post) => post.status?.toLowerCase() === 'published')
+        .flatMap((post) => {
             const lastModified = post.updated_at ? new Date(post.updated_at) : now;
-            const categoryTranslations = post.category?.name ?? [];
-            const matchedKnowledge = categoryTranslations.some((t) => isKnowledgeCategory(t.text));
-            const matchedNews = categoryTranslations.some((t) => isNewsCategory(t.text));
-
-            const segments: string[] = [];
-            if (matchedKnowledge) segments.push('knowledge');
-            if (matchedNews) segments.push('news-from-us');
-            if (segments.length === 0) segments.push('news-from-us');
 
             return LOCALES.flatMap((locale) => {
                 const translation =
@@ -105,17 +94,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 const slug = translation?.slug;
                 if (!slug) return [];
 
-                return segments.map((segment) => ({
-                    url: `${BASE_URL}/${locale}/${segment}/${post.id}-${slug}`,
-                    lastModified,
-                    changeFrequency: 'weekly' as const,
-                    priority: 0.7
-                }));
+                return [
+                    {
+                        url: `${BASE_URL}/${locale}/news-from-us/${post.id}-${slug}`,
+                        lastModified,
+                        changeFrequency: 'weekly' as const,
+                        priority: 0.7
+                    }
+                ];
             });
         });
-    } catch (error) {
-        console.error('Failed to generate sitemap for articles:', error);
-    }
 
     return [...staticPages, ...articlePages];
 }
