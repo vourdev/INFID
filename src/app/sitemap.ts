@@ -1,11 +1,10 @@
 import { MetadataRoute } from 'next';
 
-import { API_ENDPOINTS } from '@/lib/api-endpoints';
-import { apiRequest } from '@/lib/api-request';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-endpoints';
 import { allowedKnowledgeCategories, allowedNewsCategories } from '@/types/categories';
 import { Post } from '@/types/posts';
 
-const BASE_URL = process.env.NEXT_URL;
+const BASE_URL = (process.env.NEXT_URL ?? '').replace(/\/+$/, '');
 const LOCALES = ['id', 'en'] as const;
 
 export const revalidate = 3600;
@@ -51,12 +50,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     let articlePages: MetadataRoute.Sitemap = [];
 
+    if (!API_BASE_URL) {
+        console.error('[sitemap] NEXT_PUBLIC_API_URL is not defined — skipping article URLs');
+        return [...staticPages, ...articlePages];
+    }
+
     try {
-        const res = await apiRequest.get<Post[]>(API_ENDPOINTS.posts, {
-            params: { limit: 1000, page: 1 }
+        const endpoint = `${API_BASE_URL.replace(/\/+$/, '')}${API_ENDPOINTS.posts}?limit=1000&page=1`;
+        const response = await fetch(endpoint, {
+            headers: { 'Content-Type': 'application/json' },
+            next: { revalidate: 3600 }
         });
 
-        const articles = (res.data || []).filter((post) => post.status?.toLowerCase() === 'published');
+        if (!response.ok) {
+            console.error(
+                `[sitemap] Posts API responded with ${response.status} ${response.statusText} for ${endpoint}`
+            );
+            return [...staticPages, ...articlePages];
+        }
+
+        const payload = (await response.json()) as {
+            data?: Post[] | { data?: Post[] };
+        } & { [key: string]: unknown };
+
+        const rawData = payload?.data;
+        const articlesRaw: Post[] = Array.isArray(rawData)
+            ? rawData
+            : Array.isArray((rawData as { data?: Post[] })?.data)
+              ? ((rawData as { data?: Post[] }).data ?? [])
+              : Array.isArray(payload as unknown as Post[])
+                ? (payload as unknown as Post[])
+                : [];
+
+        console.log(`[sitemap] Fetched ${articlesRaw.length} posts from API`);
+
+        const articles = articlesRaw.filter(
+            (post) => post.status?.toLowerCase() === 'published'
+        );
 
         articlePages = articles.flatMap((post) => {
             const lastModified = post.updated_at ? new Date(post.updated_at) : now;
