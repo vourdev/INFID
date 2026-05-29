@@ -2,6 +2,7 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const API_ENDPOINTS = {
     posts: '/v1/posts',
+    postsSitemap: '/v1/posts/sitemap',
     postsAttachment: '/v1/posts/attachment',
     categories: '/v1/posts/categories',
     regions: '/v1/regions',

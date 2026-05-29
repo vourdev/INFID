@@ -1,16 +1,21 @@
 import { MetadataRoute } from 'next';
 
 import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-endpoints';
-import { Post } from '@/types/posts';
+import { knowledgeCategorySlugs, newsCategorySlugs } from '@/types/categories';
 
 const BASE_URL = (process.env.NEXT_URL ?? '').replace(/\/+$/, '');
 const LOCALES = ['id', 'en'] as const;
-const NEWS_CATEGORIES = 'Kegiatan|Siaran Pers|Laporan Tahunan';
-const NEWS_LIMIT = 100;
 
 export const revalidate = 3600;
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]['changeFrequency'];
+
+interface SitemapPost {
+    id: number;
+    category: { slug: string };
+    translations: { language: string; slug: string }[];
+    updated_at: string;
+}
 
 const STATIC_ROUTES: Array<{
     path: string;
@@ -31,22 +36,23 @@ const STATIC_ROUTES: Array<{
     { path: '/contact-us', changeFrequency: 'yearly', priority: 0.5 }
 ];
 
-async function fetchLatestNewsPosts(): Promise<Post[]> {
+function resolveSection(categorySlug: string): 'knowledge' | 'news-from-us' | null {
+    if ((knowledgeCategorySlugs as readonly string[]).includes(categorySlug)) {
+        return 'knowledge';
+    }
+    if ((newsCategorySlugs as readonly string[]).includes(categorySlug)) {
+        return 'news-from-us';
+    }
+    return null;
+}
+
+async function fetchSitemapPosts(): Promise<SitemapPost[]> {
     if (!API_BASE_URL) {
-        console.error('[sitemap] NEXT_PUBLIC_API_URL is not defined — skipping article URLs');
+        console.error('[sitemap] NEXT_PUBLIC_API_URL is not defined');
         return [];
     }
 
-    const params = new URLSearchParams({
-        category: NEWS_CATEGORIES,
-        limit: String(NEWS_LIMIT),
-        page: '1',
-        year: '',
-        author: '',
-        tags: '',
-        search: ''
-    });
-    const endpoint = `${API_BASE_URL.replace(/\/+$/, '')}${API_ENDPOINTS.posts}?${params.toString()}`;
+    const endpoint = `${API_BASE_URL.replace(/\/+$/, '')}${API_ENDPOINTS.postsSitemap}`;
 
     try {
         const response = await fetch(endpoint, {
@@ -55,16 +61,16 @@ async function fetchLatestNewsPosts(): Promise<Post[]> {
         });
 
         if (!response.ok) {
-            console.error(`[sitemap] Posts API ${response.status} ${response.statusText}`);
+            console.error(`[sitemap] API ${response.status} ${response.statusText}`);
             return [];
         }
 
-        const payload = (await response.json()) as { data?: Post[] };
+        const payload = (await response.json()) as { data?: SitemapPost[] };
         const posts = Array.isArray(payload?.data) ? payload.data : [];
-        console.log(`[sitemap] Fetched ${posts.length} news posts`);
+        console.log(`[sitemap] Fetched ${posts.length} posts`);
         return posts;
     } catch (error) {
-        console.error('[sitemap] Failed to fetch news posts:', error);
+        console.error('[sitemap] Failed to fetch posts:', error);
         return [];
     }
 }
@@ -81,29 +87,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
     );
 
-    const posts = await fetchLatestNewsPosts();
+    const posts = await fetchSitemapPosts();
 
-    const articlePages: MetadataRoute.Sitemap = posts
-        .filter((post) => post.status?.toLowerCase() === 'published')
-        .flatMap((post) => {
-            const lastModified = post.updated_at ? new Date(post.updated_at) : now;
+    const articlePages: MetadataRoute.Sitemap = posts.flatMap((post) => {
+        const section = resolveSection(post.category?.slug);
+        if (!section) return [];
 
-            return LOCALES.flatMap((locale) => {
-                const translation =
-                    post.translations?.find((t) => t.language === locale) ?? post.translations?.[0];
-                const slug = translation?.slug;
-                if (!slug) return [];
+        const lastModified = post.updated_at ? new Date(post.updated_at) : now;
 
-                return [
-                    {
-                        url: `${BASE_URL}/${locale}/news-from-us/${post.id}-${slug}`,
-                        lastModified,
-                        changeFrequency: 'weekly' as const,
-                        priority: 0.7
-                    }
-                ];
-            });
-        });
+        return post.translations
+            .filter((t) => LOCALES.includes(t.language as (typeof LOCALES)[number]) && t.slug)
+            .map((t) => ({
+                url: `${BASE_URL}/${t.language}/${section}/${post.id}-${t.slug}`,
+                lastModified,
+                changeFrequency: 'weekly' as const,
+                priority: 0.7
+            }));
+    });
 
     return [...staticPages, ...articlePages];
 }

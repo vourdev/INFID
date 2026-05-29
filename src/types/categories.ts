@@ -14,3 +14,17 @@ export const allowedNewsCategories = [
     { id: 'Bergerak, Berdampak!', en: 'In Action, Making Impact!' },
     { id: 'Laporan Tahunan', en: 'Annual Report' }
 ];
+
+export const knowledgeCategorySlugs = [
+    'artikel',
+    'riset',
+    'kertas-kebijakan',
+    'modul-panduan'
+] as const;
+
+export const newsCategorySlugs = [
+    'kegiatan',
+    'siaran-pers',
+    'cerita-perubahan',
+    'laporan-tahunan'
+] as const;
